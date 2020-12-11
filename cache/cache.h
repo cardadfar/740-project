@@ -1,4 +1,4 @@
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -11,6 +11,7 @@ struct Texture
 };
 
 /** Simulates an LRU texture cache. */
+template<class S>
 class TCache
 {
 public:
@@ -18,6 +19,7 @@ public:
     const int nWays;    /** The number of ways in each set. */
     const int bWidth;   /** The width in pixels of a block. */
     const int bHeight;  /** The height in pixels of a block. */
+    std::vector<double> blockFreq;
 
     /**
      * Instantiates a set-associative LRU texture cache.
@@ -34,7 +36,7 @@ public:
      * @param width the width of the texture
      * @param height the height of the texture
      */
-    void addTexture(const std::string &name, int width, int height);
+    void addTexture(const std::string &name, int width, int height, int freq);
 
     /**
      * Computes a linear index from a texture and an offset into the texture.
@@ -52,10 +54,44 @@ public:
      */
     bool lookup(const std::string &name, int offset);
 
+    void print();
+
 private:
     int nTextures, nBlocks;
-    std::map<std::string, int> texIdMap;
+    std::unordered_map<std::string, int> texIdMap;
     std::vector<int> texStartIdx;
     std::vector<Texture> textures;
-    int **sets;
+    std::vector<S> sets;
 };
+
+
+class LRUSet
+{
+public:
+    LRUSet(TCache<LRUSet> *cache, int nWays);
+    bool lookup(int index);
+    void print();
+private:
+    int nWays;
+    int *set;
+};
+
+template<double (*S)(int, double)>
+class FPQSet
+{
+public:
+    FPQSet(TCache<FPQSet> *cache, int nWays);
+    bool lookup(int index);
+    void print();
+private:
+    TCache<FPQSet> *cache;
+    int nWays;
+    int *set;
+};
+
+double score_lru(int rank, double freq);
+double score_freq(int rank, double freq);
+double score_weighted(int rank, double freq);
+double score2(int rank, double freq);
+
+extern double weight;
